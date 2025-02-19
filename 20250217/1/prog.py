@@ -22,17 +22,55 @@ def get_last_commit(repo_path, branch_name):
 
 def get_last_commit_info(repo_path, branch_name):
     commit_hash = get_last_commit(repo_path, branch_name)
-    if not commit_hash:
-        return None
+    return read_git_object(repo_path, commit_hash)
 
-    objects_dir = os.path.join(repo_path, ".git", "objects")
-    commit_path = os.path.join(objects_dir, commit_hash[:2], commit_hash[2:])
 
-    with open(commit_path, "rb") as f:
-        compressed_data = f.read()
-    decompressed_data = zlib.decompress(compressed_data).decode("utf-8")
+def get_tree_info(repo_path, branch_name):
+    commit_content = get_last_commit_info(repo_path, branch_name)
 
-    return decompressed_data
+    for line in commit_content.splitlines():
+        if line.startswith("tree "):
+            tree_hash = line.split(" ")[1]
+            break
+
+    return read_git_object(repo_path, tree_hash)
+
+
+def read_git_object(repo_path, object_hash):
+    obj_path = os.path.join(repo_path, ".git", "objects", object_hash[:2], object_hash[2:])
+    if not os.path.exists(obj_path):
+        return f"Объект {object_hash} не найден."
+    with open(obj_path, "rb") as f:
+        obj = zlib.decompress(f.read())
+        header, _, body = obj.partition(b'\x00')
+        kind, size = header.split()
+
+    output = ""
+    if kind == b'tree':
+        i = 0
+        while i < len(body):
+            mode_end = body.find(b' ', i)
+            mode = body[i:mode_end].decode()
+
+            name_end = body.find(b'\x00', mode_end)
+            name = body[mode_end + 1:name_end].decode()
+
+            sha = body[name_end + 1:name_end + 21]
+            obj_hash = sha.hex()
+
+            obj_path = os.path.join(repo_path, ".git", "objects", obj_hash[:2], obj_hash[2:])
+            with open(obj_path, "rb") as obj_file:
+                obj_type = zlib.decompress(obj_file.read()).split(b' ')[0].decode()
+
+            output += f"{obj_type:<5} {obj_hash} {name}\n"
+            i = name_end + 21
+
+        return output.strip()
+
+    elif kind == b'commit':
+        return body.decode(errors='ignore')
+
+
 
 repo_path = sys.argv[1]
 if len(sys.argv) == 2:
@@ -46,6 +84,11 @@ elif len(sys.argv) == 3:
     match option:
         case "1":
             print(get_last_commit_info(repo_path, branch_name))
+        case "2":
+            print(get_tree_info(repo_path, branch_name))
+
+
+
 
 
 
