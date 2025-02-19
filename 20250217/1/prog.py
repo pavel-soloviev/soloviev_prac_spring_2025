@@ -71,6 +71,33 @@ def read_git_object(repo_path, object_hash):
         return body.decode(errors='ignore')
 
 
+def get_parent_commit(commit_body):
+    for line in commit_body.splitlines():
+        if line.startswith("parent "):
+            return line.split()[1]
+    return None
+
+
+def get_commit_tree_hash(commit_body):
+    for line in commit_body.splitlines():
+        if line.startswith("tree "):
+            return line.split()[1]
+    return None
+
+
+def print_commit_history(repo_path, branch_name):
+    commit_hash = get_last_commit(repo_path, branch_name)
+
+    while commit_hash:
+        commit_body = read_git_object(repo_path, commit_hash)
+
+        tree_hash = get_commit_tree_hash(commit_body)
+        print(f"TREE for commit {commit_hash}")
+        print(read_git_object(repo_path, tree_hash))
+        print()
+
+        commit_hash = get_parent_commit(commit_body)
+
 
 repo_path = sys.argv[1]
 if len(sys.argv) == 2:
@@ -83,12 +110,9 @@ elif len(sys.argv) == 3:
     option = input()
     match option:
         case "1":
-            print(get_last_commit_info(repo_path, branch_name))
+            print(get_last_commit_info(repo_path, branch_name).rstrip())
         case "2":
             print(get_tree_info(repo_path, branch_name))
-
-
-
-
-
+        case "3":
+            print_commit_history(repo_path, branch_name)
 
