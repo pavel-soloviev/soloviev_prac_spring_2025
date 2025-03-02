@@ -56,7 +56,7 @@ def add_monster(x, y, name, hello):
 
 
 def encounter(x, y):
-    print(cowsay.cowsay(monsters[(x, y)]))
+    print(cowsay.cowsay(monsters[(x, y)][1], cow=monsters[(x, y)][0]))
 
 
 def parse_commands(command):
