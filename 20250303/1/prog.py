@@ -73,6 +73,7 @@ def parse_commands(command):
 
 
 if __name__ == "__main__":
+    print("<<< Welcome to Python-MUD 0.1 >>>")
     if sys.stdin.isatty():  # Интерактивный режим
         while True:
             try:
@@ -83,3 +84,4 @@ if __name__ == "__main__":
     else:  # Чтение из файла
         for line in sys.stdin:
             parse_commands(line)
+
