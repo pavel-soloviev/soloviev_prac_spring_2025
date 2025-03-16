@@ -103,14 +103,24 @@ class MUD_Comandline(cmd.Cmd):
             print("Invalid addmon command format")
 
     def do_attack(self, arg):
-        """Attack the monster in the current position"""
+        """Attack the monster in the current position with an optional weapon"""
+        weapons = {"sword": 10, "spear": 15, "axe": 20}
+        args = shlex.split(arg) if arg else []
+        weapon = "sword"
+        if len(args) > 1 and args[0] == "with":
+            weapon = args[1]
+
+        if weapon not in weapons:
+            print("Unknown weapon")
+            return
+
         x, y = self.player_pos
         if (x, y) not in monsters:
             print("No monster here")
             return
 
         name, hello, hp = monsters[(x, y)]
-        damage = 10 if hp >= 10 else hp
+        damage = weapons[weapon] if hp >= weapons[weapon] else hp
         hp -= damage
         print(f"Attacked {name}, damage {damage} hp")
 
@@ -120,6 +130,10 @@ class MUD_Comandline(cmd.Cmd):
         else:
             print(f"{name} now has {hp} hp")
             monsters[(x, y)] = (name, hello, hp)
+
+    def complete_attack(self, text, line, begidx, endidx):
+        """Autocomplete weapon names for attack command"""
+        return [w for w in ["sword", "spear", "axe"] if w.startswith(text)]
 
 
 def add_monster(name, hp, x, y, hello):
