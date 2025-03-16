@@ -33,6 +33,7 @@ class MUD_Comandline(cmd.Cmd):
     intro = "<<< Welcome to Python-MUD 0.1 >>>"
     prompt = "MUD_cmd>> "
     player_pos = [0, 0]
+    weapons = {'sword': 10, 'spear': 15, 'axe': 20}
 
     def do_exit(self, arg):
         """Exit from cmd"""
@@ -103,37 +104,60 @@ class MUD_Comandline(cmd.Cmd):
             print("Invalid addmon command format")
 
     def do_attack(self, arg):
-        """Attack the monster in the current position with an optional weapon"""
-        weapons = {"sword": 10, "spear": 15, "axe": 20}
-        args = shlex.split(arg) if arg else []
-        weapon = "sword"
-        if len(args) > 1 and args[0] == "with":
-            weapon = args[1]
+        """Attack a monster at your position. Syntax: attack <monster> with <weapon>"""
+        try:
+            args = shlex.split(arg)
+        except ValueError as e:
+            print(f"Argument parsing error: {e}")
+            return
 
-        if weapon not in weapons:
+        if not args:
+            print("Specify a monster name")
+            return
+
+
+        monster_name = args[0]
+        weapon_name = "sword"  # Default weapon
+        
+        if len(args) > 2 and args[1] == "with":
+            weapon_name = args[2]
+
+        if weapon_name not in self.weapons:
             print("Unknown weapon")
             return
 
         x, y = self.player_pos
-        if (x, y) not in monsters:
-            print("No monster here")
+        if (x, y) not in monsters or monsters[(x, y)][0] != monster_name:
+            print(f"No {monster_name} here")
             return
 
+        damage = self.weapons[weapon_name]
         name, hello, hp = monsters[(x, y)]
-        damage = weapons[weapon] if hp >= weapons[weapon] else hp
-        hp -= damage
-        print(f"Attacked {name}, damage {damage} hp")
+        actual_damage = min(hp, damage)
+        hp -= actual_damage
 
+        print(f"Attacked {name}, damage {actual_damage} hp")
         if hp <= 0:
             print(f"{name} died")
             del monsters[(x, y)]
         else:
             print(f"{name} now has {hp} hp")
             monsters[(x, y)] = (name, hello, hp)
-
+    
     def complete_attack(self, text, line, begidx, endidx):
-        """Autocomplete weapon names for attack command"""
-        return [w for w in ["sword", "spear", "axe"] if w.startswith(text)]
+        args = line[:endidx].split()
+        suggestions = []
+        monsters = cowsay.list_cows() + ["jgsbat"]
+        weapons_names = list(self.weapons.keys())
+
+        if len(args) == 2:
+            suggestions = monsters
+        elif len(args) == 3:
+            suggestions = ["with"]
+        elif len(args) == 4:
+            suggestions = weapons_names
+
+        return [item for item in suggestions if item.startswith(text)]
 
 
 def add_monster(name, hp, x, y, hello):
