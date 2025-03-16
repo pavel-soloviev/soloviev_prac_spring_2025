@@ -103,23 +103,35 @@ class MUD_Comandline(cmd.Cmd):
             print("Invalid addmon command format")
 
     def do_attack(self, arg):
-        """Attack the monster in the current position"""
+        """Attack a monster by name"""
+        if not arg:
+            print("Usage: attack <monster_name>")
+            return
+
         x, y = self.player_pos
         if (x, y) not in monsters:
-            print("No monster here")
+            print(f"No {arg} here")
             return
 
         name, hello, hp = monsters[(x, y)]
-        damage = 10 if hp >= 10 else hp
-        hp -= damage
+        if name != arg:
+            print(f"No {arg} here")
+            return
+
+        damage = 10
+        new_hp = max(0, hp - damage)
         print(f"Attacked {name}, damage {damage} hp")
 
-        if hp <= 0:
+        if new_hp == 0:
             print(f"{name} died")
             del monsters[(x, y)]
         else:
-            print(f"{name} now has {hp} hp")
-            monsters[(x, y)] = (name, hello, hp)
+            print(f"{name} now has {new_hp} hp")
+            monsters[(x, y)] = (name, hello, new_hp)
+
+    def complete_attack(self, text, line, begidx, endidx):
+        """Autocomplete monster names for attack command"""
+        return [name for name in cowsay.list_cows() + ["jgsbat"] if name.startswith(text)]
 
 
 def add_monster(name, hp, x, y, hello):
