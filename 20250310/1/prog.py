@@ -102,6 +102,25 @@ class MUD_Comandline(cmd.Cmd):
         except (IndexError, KeyError, ValueError):
             print("Invalid addmon command format")
 
+    def do_attack(self, arg):
+        """Attack the monster in the current position"""
+        x, y = self.player_pos
+        if (x, y) not in monsters:
+            print("No monster here")
+            return
+
+        name, hello, hp = monsters[(x, y)]
+        damage = 10 if hp >= 10 else hp
+        hp -= damage
+        print(f"Attacked {name}, damage {damage} hp")
+
+        if hp <= 0:
+            print(f"{name} died")
+            del monsters[(x, y)]
+        else:
+            print(f"{name} now has {hp} hp")
+            monsters[(x, y)] = (name, hello, hp)
+
 
 def add_monster(name, hp, x, y, hello):
     try:
