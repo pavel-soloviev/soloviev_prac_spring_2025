@@ -79,6 +79,7 @@ class MUD_Comandline(cmd.Cmd):
             encounter(x, y)
 
     def do_addmon(self, arg):
+        """Adds a monster to the cell"""
         try:
             args = shlex.split(arg)
         except ValueError as e:
