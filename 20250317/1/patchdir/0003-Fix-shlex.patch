@@ -1,0 +1,23 @@
+From 4f635bf20ffc013520f89ceb36df25a5b5120fc4 Mon Sep 17 00:00:00 2001
+From: Pavel <sol.pablo2015@yandex.ru>
+Date: Sun, 23 Mar 2025 22:05:55 +0300
+Subject: [PATCH 3/3] Fix shlex
+
+---
+ 20250317/1/client.py | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/20250317/1/client.py b/20250317/1/client.py
+index 4b6c447..41e7a39 100644
+--- a/20250317/1/client.py
++++ b/20250317/1/client.py
+@@ -1,6 +1,5 @@
+ import socket
+ import cmd
+-import shlex
+ import cowsay
+ 
+ class MUD_Client(cmd.Cmd):
+-- 
+2.47.1
+
