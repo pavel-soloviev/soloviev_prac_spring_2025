@@ -1,6 +1,5 @@
 import socket
 import cmd
-import shlex
 import cowsay
 
 class MUD_Client(cmd.Cmd):
