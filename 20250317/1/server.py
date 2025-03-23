@@ -99,7 +99,7 @@ def handle_command(command):
     elif cmd == "attack":
         try:
             monster_name = parts[1]
-            weapon_name = "sword"  # Default weapon
+            weapon_name = "sword"
             if len(parts) > 3 and parts[2] == "with":
                 weapon_name = parts[3]
 
@@ -138,7 +138,6 @@ def start_server():
         client_socket, addr = server_socket.accept()
         print(f"Client connected: {addr}")
 
-        # Send welcome message
         client_socket.send("<<< Welcome to Python-MUD 0.1 >>>\n".encode())
 
         while True:
