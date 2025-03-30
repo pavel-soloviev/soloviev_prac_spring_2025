@@ -1,8 +1,12 @@
-import socket
+import asyncio
+import cmd
+import shlex
 import cowsay
 from io import StringIO
 
-# Custom jgsbat cow
+FIELD_SIZE = 10
+
+# Полностью сохранён оригинальный jgsbat
 jgsbat = cowsay.read_dot_cow(StringIO("""
 $the_cow = <<EOC;
          $thoughts
@@ -10,149 +14,179 @@ $the_cow = <<EOC;
     ,_                    _,
     ) '-._  ,_    _,  _.-' (
     )  _.-'.|\\--//|.'-._  (
-     )'   .'\/o\/o\/'.   `(
-      ) .' . \====/ . '. (
-       )  / <<    >> \  (
-        '-._/``  ``\_.-'
-  jgs     __\\'--'//__
+     )'   .'\\/o\\/o\\/'.   `(
+      ) .' . \\====/ . '. (
+       )  / <<    >> \\  (
+        '-._/``  ``\\_.-'
+  jgs     __\\\\'--'//__
          (((""`  `"")))
 EOC
 """))
 
-GRID_SIZE = 10
-monsters = {}
-player_pos = [0, 0]
-weapons = {'sword': 10, 'spear': 15, 'axe': 20}
+class Weapon:
+    weapon_dict = {'sword': 10, 'spear': 15, 'axe': 20}
 
-def wrap_position(x, y):
-    return x % GRID_SIZE, y % GRID_SIZE
+    def __init__(self, name):
+        self.name = name
+        self.damage = self.weapon_dict[self.name]
 
-def add_monster(name, hp, x, y, hello):
-    try:
+class Player:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.weapon = Weapon('sword')
+
+    def position(self):
+        return self.x, self.y
+
+    def move(self, direction):
+        if direction == 'up':
+            self.y = (self.y - 1) % FIELD_SIZE
+        elif direction == 'down':
+            self.y = (self.y + 1) % FIELD_SIZE
+        elif direction == 'left':
+            self.x = (self.x - 1) % FIELD_SIZE
+        elif direction == 'right':
+            self.x = (self.x + 1) % FIELD_SIZE
+        return self.x, self.y
+
+    def attack_power(self):
+        return self.weapon.damage
+
+class Monster:
+    def __init__(self, name, x, y, hp, hello):
+        self.name = name
+        self.x = x
+        self.y = y
+        self.hp = hp
+        self.hello = hello
+
+    def exists(self):
+        return True
+
+class GameWorld:
+    field = [[None for _ in range(FIELD_SIZE)] for _ in range(FIELD_SIZE)]
+    players = {}
+
+    def add_player(self, name):
+        if name not in self.players:
+            self.players[name] = Player()
+            return f"Welcome {name}!"
+        return f"Player {name} already exists"
+
+    def encounter(self, x, y):
+        monster = self.field[x][y]
+        if monster:
+            if monster.name == "jgsbat":
+                return cowsay.cowsay(monster.hello, cowfile=jgsbat)
+            return cowsay.cowsay(monster.hello, cow=monster.name)
+
+    def move_player(self, name, direction):
+        x, y = self.players[name].move(direction)
+        result = f"Moved to ({x}, {y})"
+        if self.field[x][y] is not None:
+            result += "\n" + self.encounter(x, y)
+        return result
+
+    def add_monster(self, args):
+        name, hello, hp, x, y = args
         x, y, hp = int(x), int(y), int(hp)
-        if x < 0 or x > 9 or y < 0 or y > 9 or hp <= 0:
-            raise ValueError
-    except ValueError:
-        return "Invalid arguments\n"
-    
-    available_cows = cowsay.list_cows()
-    if name not in available_cows and name != "jgsbat":
-        return "Cannot add unknown monster\n"
-    else:
-        replaced = (x, y) in monsters
-        monsters[(x, y)] = (name, hello, hp)
-        response = f"Added monster {name} to ({x}, {y}) saying {hello}\n"
+        replaced = self.field[x][y] is not None
+        self.field[x][y] = Monster(name, x, y, hp, hello)
+        message = f"Added monster {name} at ({x},{y}) saying {hello}"
         if replaced:
-            response += "Replaced the old monster\n"
-        return response
+            message += "\nReplaced old monster"
+        return message
 
-def encounter(x, y):
-    name, hello, hp = monsters[(x, y)]
-    if name == "jgsbat":
-        return cowsay.cowsay(f"{hello}", cowfile=jgsbat) + "\n"
-    else:
-        return cowsay.cowsay(f"{hello}", cow=name) + "\n"
-
-def handle_command(command):
-    global player_pos
-    parts = command.strip().split()
-    if not parts:
-        return "Empty command\n"
-
-    cmd = parts[0]
-    if cmd == "exit" or cmd == "EOF":
-        return "Good bye!\n"
-    
-    elif cmd in ["up", "down", "left", "right"]:
-        x, y = player_pos
-        if cmd == "up":
-            x, y = wrap_position(x, y - 1)
-        elif cmd == "down":
-            x, y = wrap_position(x, y + 1)
-        elif cmd == "left":
-            x, y = wrap_position(x - 1, y)
-        elif cmd == "right":
-            x, y = wrap_position(x + 1, y)
+    def attack_monster(self, player_name, args):
+        x, y = self.players[player_name].position()
+        monster_name, weapon_name = args
         
-        player_pos = [x, y]
-        response = f"Moved to ({x}, {y})\n"
-        if (x, y) in monsters:
-            response += encounter(x, y)
-        return response
+        if monster_name == '.':
+            if self.field[x][y] is None:
+                return "No monster here"
+            monster_name = self.field[x][y].name
+        elif self.field[x][y] is None or monster_name != self.field[x][y].name:
+            return f"No {monster_name} here"
+
+        weapon = Weapon(weapon_name)
+        damage = min(weapon.damage, self.field[x][y].hp)
+        result = f"Attacked {monster_name}, damage {damage} hp"
+        self.field[x][y].hp -= damage
+        
+        if self.field[x][y].hp <= 0:
+            result += f"\n{monster_name} died"
+            self.field[x][y] = None
+        else:
+            result += f"\n{monster_name} has {self.field[x][y].hp} hp left"
+        
+        return result
+
+clients = {}
+
+async def game_loop(reader, writer):
+    game = GameWorld()
+    username = None
     
-    elif cmd == "addmon":
-        try:
-            name = parts[1]
-            params = {}
-            i = 2
-            while i < len(parts):
-                if parts[i] == "coords" and i + 2 < len(parts):
-                    params["coords"] = (parts[i + 1], parts[i + 2])
-                    i += 3
-                else:
-                    params[parts[i]] = parts[i + 1]
-                    i += 2
-            return add_monster(name, params["hp"], params["coords"][0], params["coords"][1], params["hello"])
-        except (IndexError, KeyError):
-            return "Invalid addmon command format\n"
-    
-    elif cmd == "attack":
-        try:
-            monster_name = parts[1]
-            weapon_name = "sword"
-            if len(parts) > 3 and parts[2] == "with":
-                weapon_name = parts[3]
-
-            if weapon_name not in weapons:
-                return "Unknown weapon\n"
-
-            x, y = player_pos
-            if (x, y) not in monsters or monsters[(x, y)][0] != monster_name:
-                return f"No {monster_name} here\n"
-
-            damage = weapons[weapon_name]
-            name, hello, hp = monsters[(x, y)]
-            actual_damage = min(hp, damage)
-            hp -= actual_damage
-
-            response = f"Attacked {name}, damage {actual_damage} hp\n"
-            if hp <= 0:
-                response += f"{name} died\n"
-                del monsters[(x, y)]
-            else:
-                response += f"{name} now has {hp} hp\n"
-                monsters[(x, y)] = (name, hello, hp)
-            return response
-        except IndexError:
-            return "Specify a monster name\n"
-
-    return "Unknown command\n"
-
-def start_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('localhost', 1337))
-    server_socket.listen(1)
-    print("Server started on port 1337...")
-
-    while True:
-        client_socket, addr = server_socket.accept()
-        print(f"Client connected: {addr}")
-
-        client_socket.send("<<< Welcome to Python-MUD 0.1 >>>\n".encode())
-
-        while True:
-            data = client_socket.recv(1024).decode().strip()
+    try:
+        while not reader.at_eof():
+            data = await reader.readline()
             if not data:
                 break
+                
+            command = shlex.split(data.decode().strip())
+            if not command:
+                continue
+                
+            if command[0] == "register" and len(command) > 1:
+                username = command[1]
+                response = game.add_player(username)
+                writer.write(f"{response}\n".encode())
+                if response.startswith("Welcome"):
+                    clients[username] = asyncio.Queue()
+                    writer.write("<<< Welcome to Python-MUD 0.1 >>>\n".encode())
+                    for user, queue in clients.items():
+                        if user != username:
+                            await queue.put(f"{username} joined the game")
+                else:
+                    break
+                    
+            elif username in game.players:
+                if command[0] == "move" and len(command) > 1:
+                    response = game.move_player(username, command[1])
+                    writer.write(f"{response}\n".encode())
+                    
+                elif command[0] == "addmon" and len(command) > 4:
+                    response = game.add_monster(command[1:])
+                    writer.write(f"{response}\n".encode())
+                    for user, queue in clients.items():
+                        if user != username:
+                            await queue.put(f"{username}: {response}")
+                            
+                elif command[0] == "attack" and len(command) > 1:
+                    response = game.attack_monster(username, command[1:])
+                    writer.write(f"{response}\n".encode())
+                    for user, queue in clients.items():
+                        if user != username:
+                            await queue.put(f"{username}: {response}")
+                            
+                elif command[0] == "quit":
+                    writer.write("Goodbye!\n".encode())
+                    break
+                    
+            await writer.drain()
+            
+    finally:
+        if username in clients:
+            del clients[username]
+            for queue in clients.values():
+                await queue.put(f"{username} left the game")
+        writer.close()
+        await writer.wait_closed()
 
-            response = handle_command(data)
-            client_socket.send(response.encode())
+async def main():
+    server = await asyncio.start_server(game_loop, '0.0.0.0', 8000)
+    async with server:
+        await server.serve_forever()
 
-            if data in ["exit", "EOF"]:
-                break
-
-        client_socket.close()
-        print(f"Client disconnected: {addr}")
-
-if __name__ == "__main__":
-    start_server()
+asyncio.run(main())
