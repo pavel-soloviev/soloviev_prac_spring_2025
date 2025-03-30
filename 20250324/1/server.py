@@ -6,7 +6,6 @@ from io import StringIO
 
 FIELD_SIZE = 10
 
-# Полностью сохранён оригинальный jgsbat
 jgsbat = cowsay.read_dot_cow(StringIO("""
 $the_cow = <<EOC;
          $thoughts
@@ -144,7 +143,7 @@ async def game_loop(reader, writer):
                 writer.write(f"{response}\n".encode())
                 if response.startswith("Welcome"):
                     clients[username] = asyncio.Queue()
-                    writer.write("<<< Welcome to Python-MUD 0.1 >>>\n".encode())
+                    writer.write("<<< Welcome to Python-MUD >>>\n".encode())
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username} joined the game")
