@@ -126,6 +126,13 @@ clients = {}
 async def game_loop(reader, writer):
     game = GameWorld()
     username = None
+
+    async def receive_messages():
+        """Фоновый процесс для отправки сообщений клиенту из его очереди."""
+        while True:
+            message = await clients[username].get()
+            writer.write(f"{message}\n".encode())
+            await writer.drain()
     
     try:
         while not reader.at_eof():
@@ -144,6 +151,9 @@ async def game_loop(reader, writer):
                 if response.startswith("Welcome"):
                     clients[username] = asyncio.Queue()
                     writer.write("<<< Welcome to Python-MUD >>>\n".encode())
+                    # Запускаем фоновую задачу для получения сообщений
+                    asyncio.create_task(receive_messages())
+                    # Оповещаем других игроков
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username} joined the game")
@@ -168,6 +178,13 @@ async def game_loop(reader, writer):
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username}: {response}")
+                
+                elif command[0] == "sayall" and len(command) > 1:
+                    message = " ".join(command[1:])
+                    for user, queue in clients.items():
+                        if user != username:
+                            await queue.put(f"{username}: {message}")
+                    writer.write("Message broadcasted.\n".encode())
                             
                 elif command[0] == "quit":
                     writer.write("Goodbye!\n".encode())

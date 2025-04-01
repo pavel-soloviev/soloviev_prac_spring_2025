@@ -17,6 +17,8 @@ def message_handler(cmd_interface, sock):
         print(f'\n{message}')
         current_input = f'{cmd_interface.prompt}{readline.get_line_buffer()}'
         print(current_input, end='', flush=True)
+        # cmd_interface.stdout.write(f"{cmd_interface.prompt}{readline.get_line_buffer()}")
+        # cmd_interface.stdout.flush()
 
 def parse_attack(args):
     if not args or args[0] == 'with':
@@ -123,7 +125,7 @@ class MUDClient(cmd.Cmd):
         return []
     
     def do_sayall(self, arg):
-        result = parse_addmon(shlex.split(arg))
+        result = parse_sayall(shlex.split(arg))
         if result.startswith('sayall'):
             self.sock.sendall(f"{result}\n".encode())
         else:
