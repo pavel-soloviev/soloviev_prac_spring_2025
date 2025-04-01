@@ -128,7 +128,6 @@ async def game_loop(reader, writer):
     username = None
 
     async def receive_messages():
-        """Фоновый процесс для отправки сообщений клиенту из его очереди."""
         while True:
             message = await clients[username].get()
             writer.write(f"{message}\n".encode())
@@ -151,9 +150,7 @@ async def game_loop(reader, writer):
                 if response.startswith("Welcome"):
                     clients[username] = asyncio.Queue()
                     writer.write("<<< Welcome to Python-MUD >>>\n".encode())
-                    # Запускаем фоновую задачу для получения сообщений
                     asyncio.create_task(receive_messages())
-                    # Оповещаем других игроков
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username} joined the game")
