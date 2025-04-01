@@ -1,26 +1,9 @@
+"""Server part of MOOD game."""
 import asyncio
-import cmd
 import shlex
 import cowsay
-from io import StringIO
+from ..common import FIELD_SIZE, jgsbat
 
-FIELD_SIZE = 10
-
-jgsbat = cowsay.read_dot_cow(StringIO("""
-$the_cow = <<EOC;
-         $thoughts
-          $thoughts
-    ,_                    _,
-    ) '-._  ,_    _,  _.-' (
-    )  _.-'.|\\--//|.'-._  (
-     )'   .'\\/o\\/o\\/'.   `(
-      ) .' . \\====/ . '. (
-       )  / <<    >> \\  (
-        '-._/``  ``\\_.-'
-  jgs     __\\\\'--'//__
-         (((""`  `"")))
-EOC
-"""))
 
 class Weapon:
     weapon_dict = {'sword': 10, 'spear': 15, 'axe': 20}
@@ -28,6 +11,7 @@ class Weapon:
     def __init__(self, name):
         self.name = name
         self.damage = self.weapon_dict[self.name]
+
 
 class Player:
     def __init__(self):
@@ -52,6 +36,7 @@ class Player:
     def attack_power(self):
         return self.weapon.damage
 
+
 class Monster:
     def __init__(self, name, x, y, hp, hello):
         self.name = name
@@ -62,6 +47,7 @@ class Monster:
 
     def exists(self):
         return True
+
 
 class GameWorld:
     field = [[None for _ in range(FIELD_SIZE)] for _ in range(FIELD_SIZE)]
@@ -100,7 +86,7 @@ class GameWorld:
     def attack_monster(self, player_name, args):
         x, y = self.players[player_name].position()
         monster_name, weapon_name = args
-        
+
         if monster_name == '.':
             if self.field[x][y] is None:
                 return "No monster here"
@@ -112,16 +98,18 @@ class GameWorld:
         damage = min(weapon.damage, self.field[x][y].hp)
         result = f"Attacked {monster_name}, damage {damage} hp"
         self.field[x][y].hp -= damage
-        
+
         if self.field[x][y].hp <= 0:
             result += f"\n{monster_name} died"
             self.field[x][y] = None
         else:
             result += f"\n{monster_name} has {self.field[x][y].hp} hp left"
-        
+
         return result
 
+
 clients = {}
+
 
 async def game_loop(reader, writer):
     game = GameWorld()
@@ -132,17 +120,17 @@ async def game_loop(reader, writer):
             message = await clients[username].get()
             writer.write(f"{message}\n".encode())
             await writer.drain()
-    
+
     try:
         while not reader.at_eof():
             data = await reader.readline()
             if not data:
                 break
-                
+
             command = shlex.split(data.decode().strip())
             if not command:
                 continue
-                
+
             if command[0] == "register" and len(command) > 1:
                 username = command[1]
                 response = game.add_player(username)
@@ -156,39 +144,39 @@ async def game_loop(reader, writer):
                             await queue.put(f"{username} joined the game")
                 else:
                     break
-                    
+
             elif username in game.players:
                 if command[0] == "move" and len(command) > 1:
                     response = game.move_player(username, command[1])
                     writer.write(f"{response}\n".encode())
-                    
+
                 elif command[0] == "addmon" and len(command) > 4:
                     response = game.add_monster(command[1:])
                     writer.write(f"{response}\n".encode())
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username}: {response}")
-                            
+
                 elif command[0] == "attack" and len(command) > 1:
                     response = game.attack_monster(username, command[1:])
                     writer.write(f"{response}\n".encode())
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username}: {response}")
-                
+
                 elif command[0] == "sayall" and len(command) > 1:
                     message = " ".join(command[1:])
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username}: {message}")
                     writer.write("Message broadcasted.\n".encode())
-                            
+
                 elif command[0] == "quit":
                     writer.write("Goodbye!\n".encode())
                     break
-                    
+
             await writer.drain()
-            
+
     finally:
         if username in clients:
             del clients[username]
@@ -197,10 +185,10 @@ async def game_loop(reader, writer):
         writer.close()
         await writer.wait_closed()
 
+
 async def main():
     server = await asyncio.start_server(game_loop, '0.0.0.0', 8000)
     async with server:
         await server.serve_forever()
 
 asyncio.run(main())
-
