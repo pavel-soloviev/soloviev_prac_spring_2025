@@ -70,6 +70,13 @@ def parse_addmon(args):
     except:
         return "Invalid arguments"
 
+def parse_sayall(args):
+    if len(args) != 1:
+        return "Invalid arguments"
+    message = args[0]
+    return f"sayall {message}"
+    
+
 class MUDClient(cmd.Cmd):
     prompt = "MUD> "
 
@@ -114,6 +121,13 @@ class MUDClient(cmd.Cmd):
         if len(parts) >= 2 and parts[-1] == 'with':
             return [w for w in weapons if w.startswith(text)]
         return []
+    
+    def do_sayall(self, arg):
+        result = parse_addmon(shlex.split(arg))
+        if result.startswith('sayall'):
+            self.sock.sendall(f"{result}\n".encode())
+        else:
+            print(result)
 
     def do_quit(self, arg):
         self.sock.sendall(b"quit\n")
