@@ -7,6 +7,8 @@ import shlex
 import threading
 import cowsay
 from ..common import FIELD_SIZE
+import time
+import argparse
 
 
 def message_handler(cmd_interface, sock):
@@ -138,24 +140,62 @@ class MUDClient(cmd.Cmd):
         return True
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python client.py <username>")
-        return
+class FileMUDClient(MUDClient):
+    def __init__(self, sock, username, file):
+        cmd.Cmd.__init__(self, stdin=file, stdout=sys.stdout)
+        self.sock = sock
+        self.prompt = ''
+        self.use_rawinput = False
+        self.sock.sendall(f"register {username}\n".encode())
 
+    def onecmd(self, line):
+        time.sleep(1)  # Задержка между командами
+        return super().onecmd(line)
+
+    def do_EOF(self, arg):
+        return True
+
+
+def run_from_file(username, filename):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(('localhost', 8000))
 
-    client = MUDClient(sock, sys.argv[1])
-    handler = threading.Thread(target=message_handler, args=(client, sock))
-    handler.start()
+    with open(filename) as f:
+        client = FileMUDClient(sock, username, f)
+        handler = threading.Thread(target=message_handler, args=(client, sock))
+        handler.daemon = True
+        handler.start()
+        try:
+            client.cmdloop()
+        finally:
+            sock.close()
 
-    try:
-        client.cmdloop()
-    finally:
-        handler.join()
-        sock.close()
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("username")
+    parser.add_argument("--file", help="File with commands")
+    args = parser.parse_args()
+
+    if args.file:
+        run_from_file(args.username, args.file)
+    else:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(('localhost', 8000))
+
+        client = MUDClient(sock, args.username)
+        handler = threading.Thread(target=message_handler, args=(client, sock))
+        handler.start()
+
+        try:
+            client.cmdloop()
+        finally:
+            handler.join()
+            sock.close()
+
 
 
 if __name__ == "__main__":
     main()
+
