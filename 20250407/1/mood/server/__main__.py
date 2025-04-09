@@ -7,6 +7,7 @@ import random
 
 
 class Weapon:
+    """Available weapons for players."""
     weapon_dict = {'sword': 10, 'spear': 15, 'axe': 20}
 
     def __init__(self, name):
@@ -15,6 +16,7 @@ class Weapon:
 
 
 class Player:
+    """Player description."""
     def __init__(self):
         self.x = 0
         self.y = 0
@@ -39,6 +41,9 @@ class Player:
 
 
 class Monster:
+    """
+    Monsters description
+    """
     def __init__(self, name, x, y, hp, hello):
         self.name = name
         self.x = x
@@ -51,6 +56,7 @@ class Monster:
 
 
 class GameWorld:
+    """the main functionality of our game"""
     field = [[None for _ in range(FIELD_SIZE)] for _ in range(FIELD_SIZE)]
     players = {}
 
@@ -109,6 +115,7 @@ class GameWorld:
         return result
     
     async def wanderer_movement(self):
+        """Move random monster each 30 seconds"""
         while True:
             await asyncio.sleep(30)
             
@@ -170,6 +177,7 @@ clients = {}
 
 
 async def game_loop(reader, writer):
+    """Gameloop for our async game"""
     game = GameWorld()
     username = None
 
@@ -245,6 +253,7 @@ async def game_loop(reader, writer):
 
 
 async def main():
+    """Run server."""
     server = await asyncio.start_server(game_loop, '0.0.0.0', 8000)
     game_world = GameWorld()
     
@@ -252,4 +261,5 @@ async def main():
     async with server:
         await server.serve_forever()
 
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())
