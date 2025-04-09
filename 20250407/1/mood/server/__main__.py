@@ -3,6 +3,7 @@ import asyncio
 import shlex
 import cowsay
 from ..common import FIELD_SIZE, jgsbat
+import random
 
 
 class Weapon:
@@ -106,6 +107,63 @@ class GameWorld:
             result += f"\n{monster_name} has {self.field[x][y].hp} hp left"
 
         return result
+    
+    async def wanderer_movement(self):
+        while True:
+            await asyncio.sleep(30)
+            
+            monsters = []
+            for x in range(FIELD_SIZE):
+                for y in range(FIELD_SIZE):
+                    if self.field[x][y] is not None:
+                        monsters.append((x, y, self.field[x][y]))
+            
+            if not monsters:
+                continue
+            
+            moved = False
+            attempts = 0
+            max_attempts = len(monsters)
+            
+            while not moved and attempts < max_attempts:
+                attempts += 1
+                x, y, monster = random.choice(monsters)
+                directions = ['up', 'down', 'left', 'right']
+                random.shuffle(directions)
+                
+                for direction in directions:
+                    new_x, new_y = x, y
+                    if direction == 'up':
+                        new_y = (y - 1) % FIELD_SIZE
+                    elif direction == 'down':
+                        new_y = (y + 1) % FIELD_SIZE
+                    elif direction == 'left':
+                        new_x = (x - 1) % FIELD_SIZE
+                    elif direction == 'right':
+                        new_x = (x + 1) % FIELD_SIZE
+                    
+                    if self.field[new_x][new_y] is None:
+                        self.field[x][y] = None
+                        self.field[new_x][new_y] = monster
+                        monster.x, monster.y = new_x, new_y
+                        
+                        message = f"{monster.name} moved one cell {direction}"
+                        for queue in clients.values():
+                            await queue.put(message)
+                        
+                        for player_name, player in self.players.items():
+                            if (player.x, player.y) == (new_x, new_y):
+                                encounter_msg = self.encounter(new_x, new_y)
+                                if encounter_msg:
+                                    await clients[player_name].put(encounter_msg)
+                        
+                        moved = True
+                        break
+                else:
+                    monsters.remove((x, y, self.field[x][y]))
+            
+            if not moved and attempts >= max_attempts:
+                pass
 
 
 clients = {}
@@ -188,6 +246,9 @@ async def game_loop(reader, writer):
 
 async def main():
     server = await asyncio.start_server(game_loop, '0.0.0.0', 8000)
+    game_world = GameWorld()
+    
+    asyncio.create_task(game_world.wanderer_movement())
     async with server:
         await server.serve_forever()
 
