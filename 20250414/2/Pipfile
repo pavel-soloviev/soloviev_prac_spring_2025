@@ -8,6 +8,7 @@ python-cowsay = "*"
 sphinx = "*"
 
 [dev-packages]
+babel = "*"
 
 [requires]
 python_version = "3.12"

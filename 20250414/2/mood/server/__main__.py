@@ -4,6 +4,16 @@ import shlex
 import cowsay
 from ..common import FIELD_SIZE, jgsbat
 import random
+import gettext
+
+translation = gettext.translation("mud", "po", fallback=True)
+_, ngettext = translation.gettext, translation.ngettext
+
+
+def get_translators(locale):
+    translation = gettext.translation(
+        "mud", "po", languages=[locale], fallback=True)
+    return translation.gettext, translation.ngettext
 
 
 class Weapon:
@@ -66,8 +76,8 @@ class GameWorld:
     def add_player(self, name):
         if name not in self.players:
             self.players[name] = Player()
-            return f"Welcome {name}!"
-        return f"Player {name} already exists"
+            return _("Welcome {}!").format(name)
+        return _("Player {} already exists").format(name)
 
     def encounter(self, x, y):
         monster = self.field[x][y]
@@ -78,7 +88,7 @@ class GameWorld:
 
     def move_player(self, name, direction):
         x, y = self.players[name].move(direction)
-        result = f"Moved to ({x}, {y})"
+        result = _("Moved to ({}, {})").format(x, y)
         if self.field[x][y] is not None:
             result += "\n" + self.encounter(x, y)
         return result
@@ -88,9 +98,10 @@ class GameWorld:
         x, y, hp = int(x), int(y), int(hp)
         replaced = self.field[x][y] is not None
         self.field[x][y] = Monster(name, x, y, hp, hello)
-        message = f"Added monster {name} at ({x},{y}) saying {hello}"
+        message = _("Added monster {} at ({},{}) saying {}").format(
+            name, x, y, hello)
         if replaced:
-            message += "\nReplaced old monster"
+            message += _("\nReplaced old monster")
         return message
 
     def attack_monster(self, player_name, args):
@@ -99,21 +110,23 @@ class GameWorld:
 
         if monster_name == '.':
             if self.field[x][y] is None:
-                return "No monster here"
+                return _("No monster here")
             monster_name = self.field[x][y].name
         elif self.field[x][y] is None or monster_name != self.field[x][y].name:
-            return f"No {monster_name} here"
+            return _("No {} here").format(monster_name)
 
         weapon = Weapon(weapon_name)
         damage = min(weapon.damage, self.field[x][y].hp)
-        result = f"Attacked {monster_name}, damage {damage} hp"
+        result = ngettext("Attacked {}, damage {} hp",
+                          "Attacked {}, damage {} hps", damage).format(monster_name, damage)
         self.field[x][y].hp -= damage
 
         if self.field[x][y].hp <= 0:
-            result += f"\n{monster_name} died"
+            result += _("\n{} died").format(monster_name)
             self.field[x][y] = None
         else:
-            result += f"\n{monster_name} has {self.field[x][y].hp} hp left"
+            result += ngettext("\n{} has {} hp left", "\n{} has {} hps left",
+                               self.field[x][y].hp).format(monster_name, self.field[x][y].hp)
 
         return result
 
@@ -159,7 +172,8 @@ class GameWorld:
                         self.field[new_x][new_y] = monster
                         monster.x, monster.y = new_x, new_y
 
-                        message = f"{monster.name} moved one cell {direction}"
+                        message = _("{} moved one cell {}").format(
+                            monster.name, direction)
                         for queue in clients.values():
                             await queue.put(message)
 
@@ -206,12 +220,12 @@ async def game_loop(reader, writer, game):
                 response = game.add_player(username)
                 writer.write(f"{response}\n".encode())
                 if response.startswith("Welcome"):
-                    clients[username] = asyncio.Queue()
+                    clients[username] = (asyncio.Queue(), "C.utf8")
                     writer.write("<<< Welcome to Python-MUD >>>\n".encode())
                     asyncio.create_task(receive_messages())
                     for user, queue in clients.items():
                         if user != username:
-                            await queue.put(f"{username} joined the game")
+                            await queue.put(_("{} joined the game").format(username))
                 else:
                     break
 
@@ -223,23 +237,23 @@ async def game_loop(reader, writer, game):
                 elif command[0] == "addmon" and len(command) > 4:
                     response = game.add_monster(command[1:])
                     writer.write(f"{response}\n".encode())
-                    for user, queue in clients.items():
-                        if user != username:
-                            await queue.put(f"{username}: {response}")
+                    # for user, queue in clients.items():
+                    #     if user != username:
+                    #         await queue.put(f"{username}: {response}")
 
                 elif command[0] == "attack" and len(command) > 1:
                     response = game.attack_monster(username, command[1:])
                     writer.write(f"{response}\n".encode())
-                    for user, queue in clients.items():
-                        if user != username:
-                            await queue.put(f"{username}: {response}")
+                    # for user, queue in clients.items():
+                    #     if user != username:
+                    #         await queue.put(f"{username}: {response}")
 
                 elif command[0] == "sayall" and len(command) > 1:
                     message = " ".join(command[1:])
                     for user, queue in clients.items():
                         if user != username:
                             await queue.put(f"{username}: {message}")
-                    writer.write("Message broadcasted.\n".encode())
+                    writer.write(_("Message broadcasted.\n").encode())
 
                 elif command[0] == "movemonsters" and len(command) == 2:
                     if command[1] in ("on", "off"):
@@ -249,8 +263,15 @@ async def game_loop(reader, writer, game):
                     else:
                         writer.write(b"Usage: movemonsters on/off\n")
 
+                elif command[0] == "locale" and len(command) == 2:
+                    locale = command[1]
+                    queue, _ = clients[username]
+                    clients[username] = (queue, locale)
+                    writer.write(
+                        _("Set up locale: {}\n").format(locale).encode())
+
                 elif command[0] == "quit":
-                    writer.write("Goodbye!\n".encode())
+                    writer.write(_("Goodbye!\n").encode())
                     break
 
             await writer.drain()
@@ -259,7 +280,7 @@ async def game_loop(reader, writer, game):
         if username in clients:
             del clients[username]
             for queue in clients.values():
-                await queue.put(f"{username} left the game")
+                await queue.put(_("{} left the game").format(username))
         writer.close()
         await writer.wait_closed()
 
@@ -276,4 +297,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-

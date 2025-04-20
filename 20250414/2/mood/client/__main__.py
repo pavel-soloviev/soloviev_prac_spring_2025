@@ -98,6 +98,13 @@ class MUDClient(cmd.Cmd):
         else:
             print("Usage: movemonsters on/off")
 
+    def do_locale(self, arg):
+        args = shlex.split(arg)
+        if len(args) != 1:
+            print("Usage: locale <locale_name>")
+            return
+        self.sock.sendall(f"locale {args[0]}\n".encode())
+
     def do_up(self, arg):
         self.sock.sendall(b"move up\n")
 
@@ -203,4 +210,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
