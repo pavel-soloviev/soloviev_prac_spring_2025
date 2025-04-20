@@ -91,6 +91,13 @@ class MUDClient(cmd.Cmd):
         self.sock = sock
         self.sock.sendall(f"register {username}\n".encode())
 
+    def do_movemonsters(self, arg):
+        args = shlex.split(arg)
+        if len(args) == 1 and args[0] in ("on", "off"):
+            self.sock.sendall(f"movemonsters {args[0]}\n".encode())
+        else:
+            print("Usage: movemonsters on/off")
+
     def do_up(self, arg):
         self.sock.sendall(b"move up\n")
 
@@ -171,7 +178,6 @@ def run_from_file(username, filename):
             sock.close()
 
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("username")
@@ -193,7 +199,6 @@ def main():
         finally:
             handler.join()
             sock.close()
-
 
 
 if __name__ == "__main__":

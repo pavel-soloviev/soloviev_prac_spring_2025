@@ -17,6 +17,7 @@ class Weapon:
 
 class Player:
     """Player description."""
+
     def __init__(self):
         self.x = 0
         self.y = 0
@@ -44,6 +45,7 @@ class Monster:
     """
     Monsters description
     """
+
     def __init__(self, name, x, y, hp, hello):
         self.name = name
         self.x = x
@@ -59,6 +61,7 @@ class GameWorld:
     """the main functionality of our game"""
     field = [[None for _ in range(FIELD_SIZE)] for _ in range(FIELD_SIZE)]
     players = {}
+    move_monsters = True
 
     def add_player(self, name):
         if name not in self.players:
@@ -113,31 +116,33 @@ class GameWorld:
             result += f"\n{monster_name} has {self.field[x][y].hp} hp left"
 
         return result
-    
+
     async def wanderer_movement(self):
         """Move random monster each 30 seconds"""
         while True:
             await asyncio.sleep(30)
-            
+            if not self.move_monsters:
+                continue
+
             monsters = []
             for x in range(FIELD_SIZE):
                 for y in range(FIELD_SIZE):
                     if self.field[x][y] is not None:
                         monsters.append((x, y, self.field[x][y]))
-            
+
             if not monsters:
                 continue
-            
+
             moved = False
             attempts = 0
             max_attempts = len(monsters)
-            
+
             while not moved and attempts < max_attempts:
                 attempts += 1
                 x, y, monster = random.choice(monsters)
                 directions = ['up', 'down', 'left', 'right']
                 random.shuffle(directions)
-                
+
                 for direction in directions:
                     new_x, new_y = x, y
                     if direction == 'up':
@@ -148,27 +153,27 @@ class GameWorld:
                         new_x = (x - 1) % FIELD_SIZE
                     elif direction == 'right':
                         new_x = (x + 1) % FIELD_SIZE
-                    
+
                     if self.field[new_x][new_y] is None:
                         self.field[x][y] = None
                         self.field[new_x][new_y] = monster
                         monster.x, monster.y = new_x, new_y
-                        
+
                         message = f"{monster.name} moved one cell {direction}"
                         for queue in clients.values():
                             await queue.put(message)
-                        
+
                         for player_name, player in self.players.items():
                             if (player.x, player.y) == (new_x, new_y):
                                 encounter_msg = self.encounter(new_x, new_y)
                                 if encounter_msg:
                                     await clients[player_name].put(encounter_msg)
-                        
+
                         moved = True
                         break
                 else:
                     monsters.remove((x, y, self.field[x][y]))
-            
+
             if not moved and attempts >= max_attempts:
                 pass
 
@@ -176,9 +181,8 @@ class GameWorld:
 clients = {}
 
 
-async def game_loop(reader, writer):
+async def game_loop(reader, writer, game):
     """Gameloop for our async game"""
-    game = GameWorld()
     username = None
 
     async def receive_messages():
@@ -237,6 +241,14 @@ async def game_loop(reader, writer):
                             await queue.put(f"{username}: {message}")
                     writer.write("Message broadcasted.\n".encode())
 
+                elif command[0] == "movemonsters" and len(command) == 2:
+                    if command[1] in ("on", "off"):
+                        game.move_monsters = (command[1] == "on")
+                        status = "on" if game.move_monsters else "off"
+                        writer.write(f"Moving monsters: {status}\n".encode())
+                    else:
+                        writer.write(b"Usage: movemonsters on/off\n")
+
                 elif command[0] == "quit":
                     writer.write("Goodbye!\n".encode())
                     break
@@ -253,13 +265,15 @@ async def game_loop(reader, writer):
 
 
 async def main():
-    """Run server."""
-    server = await asyncio.start_server(game_loop, '0.0.0.0', 8000)
+    """Run server"""
     game_world = GameWorld()
-    
+    server = await asyncio.start_server(lambda r, w: game_loop(r, w, game_world), '0.0.0.0', 8000)
+
     asyncio.create_task(game_world.wanderer_movement())
     async with server:
         await server.serve_forever()
 
+
 if __name__ == '__main__':
     asyncio.run(main())
+
