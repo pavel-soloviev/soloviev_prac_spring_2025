@@ -9,6 +9,14 @@ import cowsay
 from ..common import FIELD_SIZE
 import time
 import argparse
+import gettext
+import os
+
+localedir = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', 'locales'))
+
+gettext.bindtextdomain('MUD', localedir)
+gettext.textdomain('MUD')
 
 
 def message_handler(cmd_interface, sock):
@@ -98,13 +106,6 @@ class MUDClient(cmd.Cmd):
         else:
             print("Usage: movemonsters on/off")
 
-    def do_locale(self, arg):
-        args = shlex.split(arg)
-        if len(args) != 1:
-            print("Usage: locale <locale_name>")
-            return
-        self.sock.sendall(f"locale {args[0]}\n".encode())
-
     def do_up(self, arg):
         self.sock.sendall(b"move up\n")
 
@@ -148,6 +149,26 @@ class MUDClient(cmd.Cmd):
             self.sock.sendall(f"{result}\n".encode())
         else:
             print(result)
+
+    def do_locale(self, arg):
+        args = shlex.split(arg)
+        if len(args) != 1:
+            print("Usage: locale <locale_name>")
+            return
+
+        locale_name = args[0]
+        try:
+            translation = gettext.translation(
+                "MUD",
+                localedir=localedir,
+                languages=[locale_name]
+            )
+            translation.install()
+            print(f"Locale changed to: {locale_name}")
+
+            self.sock.sendall(f"locale {locale_name}\n".encode())
+        except Exception as e:
+            print(f"Failed to set locale: {e}")
 
     def do_quit(self, arg):
         self.sock.sendall(b"quit\n")
