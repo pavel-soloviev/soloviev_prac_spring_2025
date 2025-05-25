@@ -329,15 +329,19 @@ async def game_loop(reader, writer, game):
         await writer.wait_closed()
 
 
-async def main():
+async def run_server(host='0.0.0.0', port=8000):
     """Run server"""
     game_world = GameWorld()
-    server = await asyncio.start_server(lambda r, w: game_loop(r, w, game_world), '0.0.0.0', 8000)
+    server = await asyncio.start_server(lambda r, w: game_loop(r, w, game_world), host, port)
 
     asyncio.create_task(game_world.wanderer_movement())
     async with server:
         await server.serve_forever()
 
 
+def run_server_finnaly(host='0.0.0.0', port=8000):
+    asyncio.run(run_server(host, port))
+
+
 if __name__ == '__main__':
-    asyncio.run(main())
+    run_server_finnaly()
