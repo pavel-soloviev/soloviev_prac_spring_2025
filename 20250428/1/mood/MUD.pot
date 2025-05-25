@@ -1,0 +1,130 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-05-25 20:09+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: mood/server/__main__.py:76
+#, python-brace-format
+msgid "Welcome {name}!"
+msgstr ""
+
+#: mood/server/__main__.py:77
+#, python-brace-format
+msgid "Player {name} already exists"
+msgstr ""
+
+#: mood/server/__main__.py:88
+#, python-brace-format
+msgid "Moved to ({x}, {y})"
+msgstr ""
+
+#: mood/server/__main__.py:98
+#, python-brace-format
+msgid "Added monster {name} at ({x},{y}) saying {hello}"
+msgstr ""
+
+#: mood/server/__main__.py:101
+msgid ""
+"\n"
+"Replaced old monster"
+msgstr ""
+
+#: mood/server/__main__.py:110
+msgid "No monster here"
+msgstr ""
+
+#: mood/server/__main__.py:113
+#, python-brace-format
+msgid "No {monster_name} here"
+msgstr ""
+
+#: mood/server/__main__.py:117
+#, python-brace-format
+msgid "Attacked {monster_name}"
+msgstr ""
+
+#: mood/server/__main__.py:118
+#, python-brace-format
+msgid ", damage {damage} hp"
+msgid_plural ", damage {damage} hps"
+msgstr[0] ""
+msgstr[1] ""
+
+#: mood/server/__main__.py:123
+#, python-brace-format
+msgid ""
+"\n"
+"{monster_name} died"
+msgstr ""
+
+#: mood/server/__main__.py:126
+#, python-brace-format
+msgid ""
+"\n"
+"{monster_name} has"
+msgstr ""
+
+#: mood/server/__main__.py:127
+#, python-brace-format
+msgid "{hp_left} hp left"
+msgid_plural "{hp_left} hps left"
+msgstr[0] ""
+msgstr[1] ""
+
+#: mood/server/__main__.py:174
+#, python-brace-format
+msgid "{monster_name} moved one cell {direction}"
+msgstr ""
+
+#: mood/server/__main__.py:258
+#, python-brace-format
+msgid "{username} joined the game"
+msgstr ""
+
+#: mood/server/__main__.py:275 mood/server/__main__.py:284
+#, python-brace-format
+msgid "{username}: {response}"
+msgstr ""
+
+#: mood/server/__main__.py:291
+#, python-brace-format
+msgid "{username}: {message}"
+msgstr ""
+
+#: mood/server/__main__.py:300
+#, python-brace-format
+msgid "Moving monsters: {status}\n"
+msgstr ""
+
+#: mood/server/__main__.py:305
+msgid "Usage: movemonsters on/off\n"
+msgstr ""
+
+#: mood/server/__main__.py:311
+#, python-brace-format
+msgid "Set up locale: {locale}"
+msgstr ""
+
+#: mood/server/__main__.py:316
+msgid "Goodbye!\n"
+msgstr ""
+
+#: mood/server/__main__.py:327
+#, python-brace-format
+msgid "{username} left the game"
+msgstr ""
+
