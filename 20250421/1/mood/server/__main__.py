@@ -210,7 +210,7 @@ def set_locale(locale_name):
         global ngettext
         _ = translation.gettext
         ngettext = translation.ngettext
-        print(f"Successfully loaded locale: {locale_name}")
+        # print(f"Successfully loaded locale: {locale_name}")
     except Exception as e:
         print(f"Locale error: {e}")
         translation = gettext.NullTranslations()
