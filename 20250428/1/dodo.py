@@ -15,6 +15,13 @@ SRC_FILES = [
 DOIT_CONFIG = {'default_tasks': ['html']}
 
 
+def task_erasea():
+    """Удаляет все генераты и новые файлы"""
+    return {
+        "actions": ["git reset --hard", "git clean -xdf"]
+    }
+
+
 def task_pot():
     """Создать .pot файл из исходников"""
     return {
