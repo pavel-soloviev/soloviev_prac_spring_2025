@@ -80,7 +80,7 @@ def parse_addmon(args):
             return "Unknown monster"
 
         return f"addmon {params['name']} {params['hello']} {params['hp']} {params['x']} {params['y']}"
-    except:
+    except Exception:
         return "Invalid arguments"
 
 

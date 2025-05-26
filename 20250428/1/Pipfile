@@ -10,6 +10,8 @@ sphinx = "*"
 [dev-packages]
 babel = "*"
 doit = "*"
+flake8 = "*"
+pydocstyle = "*"
 
 [requires]
 python_version = "3.12"

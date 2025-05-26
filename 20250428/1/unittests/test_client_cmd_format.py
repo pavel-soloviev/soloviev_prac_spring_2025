@@ -1,4 +1,4 @@
-from mood.client.__main__ import MUDClient
+# from mood.client.__main__ import MUDClient
 import io
 import os
 import sys
