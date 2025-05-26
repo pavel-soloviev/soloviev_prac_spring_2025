@@ -1,4 +1,4 @@
-"""Server part of MOOD game."""
+"""Server part of MOOD game with monsters."""
 import asyncio
 import shlex
 import cowsay
@@ -23,17 +23,20 @@ class Weapon:
 
 
 class Player:
-    """Player description."""
+    """Player character in MUD game."""
 
     def __init__(self):
+        """Initialize player at (0,0) with sword."""
         self.x = 0
         self.y = 0
         self.weapon = Weapon('sword')
 
     def position(self):
+        """Return (x,y) position."""
         return self.x, self.y
 
     def move(self, direction):
+        """Move in direction (up/down/left/right)."""
         if direction == 'up':
             self.y = (self.y - 1) % FIELD_SIZE
         elif direction == 'down':
@@ -45,12 +48,13 @@ class Player:
         return self.x, self.y
 
     def attack_power(self):
+        """Return weapon damage."""
         return self.weapon.damage
 
 
 class Monster:
     """
-    Monsters description
+    Monsters description.
     """
 
     def __init__(self, name, x, y, hp, hello):
@@ -65,7 +69,7 @@ class Monster:
 
 
 class GameWorld:
-    """the main functionality of our game"""
+    """The main functionality of our game"""
     field = [[None for _ in range(FIELD_SIZE)] for _ in range(FIELD_SIZE)]
     players = {}
     move_monsters = True
