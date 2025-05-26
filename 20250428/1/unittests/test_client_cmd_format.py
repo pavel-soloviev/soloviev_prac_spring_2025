@@ -1,4 +1,4 @@
-# from mood.client.__main__ import MUDClient
+from mood.client.__main__ import MUDClient
 import io
 import os
 import sys
@@ -18,12 +18,12 @@ class TestClient(unittest.TestCase):
 
     def test_00_format(self):
         with patch("sys.stdin", io.StringIO("down\n")) as stdin:
-            client.__main__.MUDClient(self.sockfd, stdin).cmdloop()
+            MUDClient(self.sockfd, stdin).cmdloop()
             self.assertEqual(self.sockfd.data.decode().rstrip(), "move down")
 
     def test_01_format(self):
         with patch("sys.stdin", io.StringIO("right\n")) as stdin:
-            client.__main__.MUDClient(self.sockfd, stdin).cmdloop()
+            MUDClient(self.sockfd, stdin).cmdloop()
             self.assertEqual(self.sockfd.data.decode().rstrip(), "move right")
 
     def test_02_format(self):
@@ -31,18 +31,18 @@ class TestClient(unittest.TestCase):
             "sys.stdin", io.StringIO(
                 "addmon dragon coords 1 1 hp 33 hello RRR\n")
         ) as stdin:
-            client.__main__.MUDClient(self.sockfd, stdin).cmdloop()
+            MUDClient(self.sockfd, stdin).cmdloop()
             self.assertEqual(
                 self.sockfd.data.decode().rstrip(), "addmon dragon RRR 33 1 1"
             )
 
     def test_03_format(self):
         with patch("sys.stdin", io.StringIO("attack dragon with axe\n")) as stdin:
-            client.__main__.MUDClient(self.sockfd, stdin).cmdloop()
+            MUDClient(self.sockfd, stdin).cmdloop()
             self.assertEqual(self.sockfd.data.decode().rstrip(),
                              "attack dragon axe")
 
     def test_04_format(self):
         with patch("sys.stdin", io.StringIO("attack Trump\n")) as stdin:
-            client.__main__.MUDClient(self.sockfd, stdin).cmdloop()
+            MUDClient(self.sockfd, stdin).cmdloop()
             self.sockfd.return_value.sendall.assert_not_called()
