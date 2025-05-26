@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 python-cowsay = "*"
 sphinx = "*"
+setuptools = "*"
+build = "*"
 
 [dev-packages]
 babel = "*"

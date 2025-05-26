@@ -1,0 +1,7 @@
+graft mood
+graft docs
+include pyproject.toml
+include Pipfile
+include dodo.py
+include unittests/test_server.py
+include setup.cfg

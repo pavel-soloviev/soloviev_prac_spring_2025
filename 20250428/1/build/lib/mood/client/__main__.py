@@ -11,8 +11,6 @@ import time
 import argparse
 import gettext
 import os
-import webbrowser
-from pathlib import Path
 
 localedir = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', 'locales'))
@@ -100,12 +98,6 @@ class MUDClient(cmd.Cmd):
         super().__init__()
         self.sock = sock
         self.sock.sendall(f"register {username}\n".encode())
-
-    def do_documentation(self, args):
-        """Open documentation in browser"""
-        # print(f"{str(Path(__file__).parents[1])}/_build/html/index.html")
-        webbrowser.open(
-            f"{str(Path(__file__).parents[1])}/_build/html/index.html")
 
     def do_movemonsters(self, arg):
         args = shlex.split(arg)

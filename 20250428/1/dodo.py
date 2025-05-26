@@ -6,13 +6,21 @@ LOCALES_DIR = Path("mood/locales")
 PO_FILE = LOCALES_DIR / "ru_RU/LC_MESSAGES/MUD.po"
 MO_FILE = LOCALES_DIR / "ru_RU/LC_MESSAGES/MUD.mo"
 DOCS_DIR = Path("docs")
-BUILD_DIR = DOCS_DIR / "_build"
+BUILD_DIR = MOOD_DIR / "_build"
 SRC_FILES = [
     "mood/server/__main__.py",
     "mood/client/__main__.py",
     "mood/common/__init__.py"
 ]
 DOIT_CONFIG = {'default_tasks': ['html']}
+
+
+def task_wheel():
+    """Make wheel"""
+    return {
+        'task_dep': ['html'],
+        'actions': ['python3 -m build -w']
+    }
 
 
 def task_erasea():
